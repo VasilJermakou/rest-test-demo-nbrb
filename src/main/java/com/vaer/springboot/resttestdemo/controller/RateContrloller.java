@@ -1,12 +1,14 @@
 package com.vaer.springboot.resttestdemo.controller;
 
+import com.vaer.springboot.resttestdemo.exception.RateErrorResponse;
+import com.vaer.springboot.resttestdemo.exception.RateNotFoundException;
 import com.vaer.springboot.resttestdemo.model.Rate;
 import com.vaer.springboot.resttestdemo.service.RateService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
@@ -25,21 +27,45 @@ public class RateContrloller {
     @Autowired
     private RateService rateService;
 
+    @Autowired
+    private Environment env;
+
     /* class methods */
 
     @GetMapping("/rates")
     public List<Rate> getRates(){
-        //this.rateService.printCurrencyCode();
-        //return "getRates() on action";
-
         List<Rate> rates = this.rateService.getRates().getBody();
         return rates;
     }
 
     @GetMapping("/rates/{code}")
     public Rate getRateByInternalCode(@PathVariable("code") String internalCode){
-        Rate resultRate = this.rateService.getRateByInternalCode(internalCode).getBody();
+
+        int interCode = Integer.parseInt(internalCode);
+        int tempUsd = Integer.parseInt(env.getProperty("internal.code.usd"));
+        int tempEur = Integer.parseInt(env.getProperty("internal.code.eur"));
+        int tempRur = Integer.parseInt(env.getProperty("internal.code.rur"));
+
+        Rate resultRate = null;
+
+        if(interCode == tempUsd || interCode == tempEur || interCode == tempRur){
+            resultRate = this.rateService.getRateByInternalCode(internalCode).getBody();
+        }else{
+            throw new RateNotFoundException("Rate not found: currency code - " + internalCode);
+        }
+
         return resultRate;
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<RateErrorResponse> handleException(RateNotFoundException exception){
+
+        RateErrorResponse response = new RateErrorResponse();
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        response.setMessage(exception.getMessage());
+        response.setTimeStamp(System.currentTimeMillis());
+
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/currencies")
