@@ -4,6 +4,7 @@ import com.vaer.springboot.resttestdemo.exception.RateErrorResponse;
 import com.vaer.springboot.resttestdemo.exception.RateNotFoundException;
 import com.vaer.springboot.resttestdemo.model.Rate;
 import com.vaer.springboot.resttestdemo.service.RateService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/")
+@Slf4j
 public class RateContrloller {
 
     /**
@@ -35,6 +37,7 @@ public class RateContrloller {
     @GetMapping("/rates")
     public List<Rate> getRates(){
         List<Rate> rates = this.rateService.getRates().getBody();
+        log.info(">> getRates() completed success");
         return rates;
     }
 
@@ -50,7 +53,9 @@ public class RateContrloller {
 
         if(interCode == tempUsd || interCode == tempEur || interCode == tempRur){
             resultRate = this.rateService.getRateByInternalCode(internalCode).getBody();
+            log.info(">> getRateByInternalCode() completed success. InternalCode = " + internalCode);
         }else{
+            log.error("getRateByInternalCode() failed. InternalCode = " + internalCode);
             throw new RateNotFoundException("Rate not found: currency code - " + internalCode);
         }
 
@@ -70,6 +75,7 @@ public class RateContrloller {
 
     @GetMapping("/currencies")
     public String getAllCurrenciesData(){
+        log.info(">> getAllCurrenciesData() completed success");
         return this.rateService.getAllCurrenciesData();
     }
 }
